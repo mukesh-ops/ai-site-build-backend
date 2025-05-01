@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -8,50 +7,30 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin: 'https://aisitebuild.netlify.app'
-}));
+app.use(cors());
 app.use(bodyParser.json());
 
-// ✅ Health check route (to avoid Render 502 and test deployment)
-app.get('/', (req, res) => {
-  res.send('✅ Backend is working!');
-});
-
-// 🎯 POST endpoint to receive prompt and generate content
+// Mocked /generate endpoint (no OpenAI call)
 app.post('/generate', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, siteUrl, wpKey } = req.body;
 
   try {
-    // 1. Send the prompt to ChatGPT (GPT-4)
-    const gptResponse = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: prompt }]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-        }
-      }
-    );
+    console.log("🔧 Using mocked OpenAI response");
 
-    const generatedContent = gptResponse.data.choices[0].message.content;
+    // 1. Fake AI response for testing
+    const generatedContent = `<h2>This is a mock site generated for:</h2><p>${prompt}</p>`;
 
-    // 2. Send the content to WordPress via REST API
+    // 2. Send to WordPress (replace siteUrl/wpKey if using input from frontend)
     const wpResponse = await axios.post(
-      `${process.env.WP_SITE_URL}/wp-json/wp/v2/pages`, // You can change to /posts if needed
+      `${process.env.WP_SITE_URL || siteUrl}/wp-json/wp/v2/pages`,
       {
-        title: `Generated Page`,
+        title: `Mocked AI Page`,
         content: generatedContent,
         status: 'publish'
       },
       {
         headers: {
-          Authorization: `Basic ${Buffer.from(
-            `${process.env.WP_USER}:${process.env.WP_APP_PASSWORD}`
-          ).toString('base64')}`,
+          Authorization: `Basic ${Buffer.from(`${process.env.WP_USER}:${process.env.WP_APP_PASSWORD || wpKey}`).toString('base64')}`,
           'Content-Type': 'application/json'
         }
       }
@@ -60,15 +39,15 @@ app.post('/generate', async (req, res) => {
     res.json({ success: true, wp: wpResponse.data });
   } catch (error) {
     console.error('❌ Error:', error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data || error.message
-    });
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
   }
 });
 
-// 🔁 Start the server (Render requires 0.0.0.0)
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Optional: base route to check server status
+app.get('/', (req, res) => {
+  res.send('✅ AI Site Builder backend is running (mock mode)');
 });
 
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
