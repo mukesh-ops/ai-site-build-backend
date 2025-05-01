@@ -7,7 +7,11 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://aisitebuild.netlify.app'
+}));
+
 app.use(bodyParser.json());
 
 app.post('/generate', async (req, res) => {
