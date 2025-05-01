@@ -42,11 +42,16 @@ app.post('/generate', async (req, res) => {
     res.json({ success: true, wp: wpResponse.data });
 
   } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error:', error); // Log the full error object
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Unknown error occurred',
+      fullError: error.response?.data || error.toString()
+    });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
